@@ -1,15 +1,16 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
-export default function MerciClient() {
+export default function MerciClient({
+                                        sessionId,
+                                    }: {
+    sessionId: string | null;
+}) {
     const router = useRouter();
-    const searchParams = useSearchParams();
 
     useEffect(() => {
-        const sessionId = searchParams.get("session_id");
-
         localStorage.setItem("premium", "true");
 
         if (sessionId) {
@@ -21,7 +22,7 @@ export default function MerciClient() {
         }, 1500);
 
         return () => clearTimeout(timeout);
-    }, [router, searchParams]);
+    }, [router, sessionId]);
 
     return (
         <div className="mx-auto max-w-2xl rounded-[32px] border border-emerald-300/20 bg-emerald-400/10 p-8 text-center">
