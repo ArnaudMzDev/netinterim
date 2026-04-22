@@ -1,24 +1,22 @@
 import { NextResponse } from "next/server";
 import Stripe from "stripe";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+function getStripeClient() {
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!secretKey) {
+        throw new Error("STRIPE_SECRET_KEY manquante.");
+    }
+
+    return new Stripe(secretKey);
+}
 
 export async function POST() {
     try {
         const siteUrl = process.env.NEXT_PUBLIC_SITE_URL;
         const priceId = process.env.STRIPE_PRICE_PREMIUM_MONTHLY;
-        const secretKey = process.env.STRIPE_SECRET_KEY;
-
-        if (!secretKey) {
-            console.error("Erreur: STRIPE_SECRET_KEY manquante");
-            return NextResponse.json(
-                { error: "STRIPE_SECRET_KEY manquante." },
-                { status: 500 }
-            );
-        }
 
         if (!siteUrl) {
-            console.error("Erreur: NEXT_PUBLIC_SITE_URL manquante");
             return NextResponse.json(
                 { error: "NEXT_PUBLIC_SITE_URL manquante." },
                 { status: 500 }
@@ -26,18 +24,13 @@ export async function POST() {
         }
 
         if (!priceId) {
-            console.error("Erreur: STRIPE_PRICE_PREMIUM_MONTHLY manquante");
             return NextResponse.json(
                 { error: "STRIPE_PRICE_PREMIUM_MONTHLY manquante." },
                 { status: 500 }
             );
         }
 
-        console.log("Stripe debug:", {
-            siteUrl,
-            priceId,
-            secretKeyPrefix: secretKey.slice(0, 12),
-        });
+        const stripe = getStripeClient();
 
         const session = await stripe.checkout.sessions.create({
             mode: "subscription",
@@ -53,16 +46,16 @@ export async function POST() {
             billing_address_collection: "auto",
         });
 
-        console.log("Session Stripe créée:", session.id);
-
         return NextResponse.json({ url: session.url });
     } catch (error) {
         console.error("Stripe checkout error:", error);
 
         return NextResponse.json(
             {
-                error: "Impossible de créer la session Stripe.",
-                details: error instanceof Error ? error.message : "Erreur inconnue",
+                error:
+                    error instanceof Error
+                        ? error.message
+                        : "Impossible de créer la session Stripe.",
             },
             { status: 500 }
         );

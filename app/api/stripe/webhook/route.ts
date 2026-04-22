@@ -6,7 +6,15 @@ import {
     deactivatePremiumUserByCustomerId,
 } from "@/lib/server/premiumStore";
 
-const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "");
+function getStripeClient() {
+    const secretKey = process.env.STRIPE_SECRET_KEY;
+
+    if (!secretKey) {
+        throw new Error("STRIPE_SECRET_KEY manquante.");
+    }
+
+    return new Stripe(secretKey);
+}
 
 export async function POST(req: Request) {
     try {
@@ -26,6 +34,8 @@ export async function POST(req: Request) {
                 { status: 500 }
             );
         }
+
+        const stripe = getStripeClient();
 
         const event = stripe.webhooks.constructEvent(
             body,
@@ -77,8 +87,11 @@ export async function POST(req: Request) {
         return NextResponse.json({ received: true });
     } catch (error) {
         console.error("Webhook Stripe invalide :", error);
+
         return NextResponse.json(
-            { error: "Webhook invalide." },
+            {
+                error: error instanceof Error ? error.message : "Webhook invalide.",
+            },
             { status: 400 }
         );
     }
